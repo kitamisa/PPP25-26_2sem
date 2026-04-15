@@ -51,19 +51,16 @@ class MatchData:
         self.champion = None
         self.en_passant_spot = None
 
-
     def change_turn(self):
         self.active_team = Team.DARK if self.active_team == Team.LIGHT else Team.LIGHT
         if self.active_team == Team.LIGHT:
             self.move_counter += 1
         self.en_passant_spot = None
 
-
     def get_unit(self, col: int, row: int):
         if 0 <= col < 8 and 0 <= row < 8:
             return self.field[row][col]
         return None
-
 
     def get_ruler(self, team: Team):
         return self.light_ruler if team == Team.LIGHT else self.dark_ruler
@@ -78,7 +75,6 @@ class GameUnit(ABC):
         self.team = team
         self.moved = False
         self.active = True
-
 
     def get_icon(self) -> str:
         icons = {
@@ -97,11 +93,9 @@ class GameUnit(ABC):
         }
         return icons.get((self.kind, self.team), "?")
 
-
     @abstractmethod
     def can_reach(self, target_x: int, target_y: int) -> bool:
         pass
-
 
     def perform_move(self, dest_x: int, dest_y: int) -> bool:
         if not self.can_reach(dest_x, dest_y):
@@ -136,13 +130,11 @@ class GameUnit(ABC):
 
         return True
 
-
     def _format_action(self, action: GameAction) -> str:
         start = chr(action.sx + 97) + str(8 - action.sy)
         end = chr(action.ex + 97) + str(8 - action.ey)
         symbol = self.get_icon()
         return f"{symbol}{start}-{end}"
-
 
     def _transform(self):
         transform_map = {
@@ -157,13 +149,11 @@ class GameUnit(ABC):
         self.match.all_units.remove(self)
         self.match.all_units.append(new_unit)
 
-
     def _check_ending(self):
         ruler = self.match.get_ruler(self.match.active_team)
         if ruler and self._is_mate(ruler):
             self.match.finished = True
             self.match.champion = Team.LIGHT if self.match.active_team == Team.DARK else Team.DARK
-
 
     def _is_mate(self, ruler):
         if not self._square_threatened(ruler.x, ruler.y, ruler.team):
@@ -177,7 +167,6 @@ class GameUnit(ABC):
                             if self._move_saves(unit, col, row, ruler):
                                 return False
         return True
-
 
     def _move_saves(self, unit, to_x, to_y, ruler):
         old_x, old_y = unit.x, unit.y
@@ -199,7 +188,6 @@ class GameUnit(ABC):
 
         return not in_check
 
-
     def _square_threatened(self, col: int, row: int, team: Team) -> bool:
         for unit in self.match.all_units:
             if unit.team != team and unit.active:
@@ -207,10 +195,8 @@ class GameUnit(ABC):
                     return True
         return False
 
-
     def _can_attack(self, col: int, row: int) -> bool:
         return self.can_reach(col, row)
-
 
     def _path_free(self, target_x: int, target_y: int) -> bool:
         dx = 0 if target_x == self.x else (1 if target_x > self.x else -1)
@@ -229,7 +215,6 @@ class Infantry(GameUnit):
     def __init__(self, match: MatchData, col: int, row: int, team: Team):
         super().__init__(match, FigureCategory.INFANTRY, col, row, team)
         self.double_step = 0
-
 
     def can_reach(self, target_x: int, target_y: int) -> bool:
         direction = 1 if self.team == Team.LIGHT else -1
@@ -259,7 +244,6 @@ class Castle(GameUnit):
     def __init__(self, match: MatchData, col: int, row: int, team: Team):
         super().__init__(match, FigureCategory.CASTLE, col, row, team)
 
-
     def can_reach(self, target_x: int, target_y: int) -> bool:
         if (self.x == target_x) != (self.y == target_y):
             if self._path_free(target_x, target_y):
@@ -271,7 +255,6 @@ class Castle(GameUnit):
 class Cavalry(GameUnit):
     def __init__(self, match: MatchData, col: int, row: int, team: Team):
         super().__init__(match, FigureCategory.CAVALRY, col, row, team)
-
 
     def can_reach(self, target_x: int, target_y: int) -> bool:
         dx = abs(target_x - self.x)
@@ -286,7 +269,6 @@ class Cleric(GameUnit):
     def __init__(self, match: MatchData, col: int, row: int, team: Team):
         super().__init__(match, FigureCategory.CLERIC, col, row, team)
 
-
     def can_reach(self, target_x: int, target_y: int) -> bool:
         if abs(target_x - self.x) == abs(target_y - self.y):
             if self._path_free(target_x, target_y):
@@ -298,7 +280,6 @@ class Cleric(GameUnit):
 class RoyalAdvisor(GameUnit):
     def __init__(self, match: MatchData, col: int, row: int, team: Team):
         super().__init__(match, FigureCategory.ROYAL_ADVISOR, col, row, team)
-
 
     def can_reach(self, target_x: int, target_y: int) -> bool:
         if (self.x == target_x) != (self.y == target_y) or abs(target_x - self.x) == abs(target_y - self.y):
@@ -315,7 +296,6 @@ class Monarch(GameUnit):
             match.light_ruler = self
         else:
             match.dark_ruler = self
-
 
     def can_reach(self, target_x: int, target_y: int) -> bool:
         dx = abs(target_x - self.x)
@@ -340,7 +320,6 @@ class Monarch(GameUnit):
                 return True
 
         return False
-
 
     def _square_threatened(self, col: int, row: int, team: Team) -> bool:
         for unit in self.match.all_units:
@@ -373,24 +352,23 @@ class ChessEngine:
         pg.init()
         self.data = MatchData()
         self.display = pg.display.set_mode((1000, 700))
-        pg.display.set_caption("Chess Master - New Edition")
+        pg.display.set_caption("Chess Master")
         self.clock = pg.time.Clock()
         self.selected = None
         self.available_spots = []
         self.threatened_units = []
         self.is_running = True
         self.in_menu = True
+        self.history_stack = []
 
         self._load_assets()
         self._setup_field()
-
 
     def _load_assets(self):
         try:
             self.piece_font = pg.font.SysFont("segoeuisymbol", 64)
             if self.piece_font is None:
                 self.piece_font = pg.font.Font(None, 64)
-            
             self.big_font = pg.font.Font(None, 72)
             self.title_font = pg.font.Font(None, 84)
             self.btn_font = pg.font.Font(None, 48)
@@ -404,7 +382,6 @@ class ChessEngine:
 
         self.board_surface = self._create_board()
 
-
     def _create_board(self):
         board = pg.Surface((560, 560))
         shades = [(210, 180, 140), (140, 110, 70)]
@@ -413,7 +390,6 @@ class ChessEngine:
                 color = shades[(col + row) % 2]
                 pg.draw.rect(board, color, (col * 70, row * 70, 70, 70))
         return board
-
 
     def _setup_field(self):
         back_line = [
@@ -431,7 +407,6 @@ class ChessEngine:
         for col, kind in enumerate(back_line):
             create_unit(self.data, kind, col, 7, Team.LIGHT)
 
-
     def start(self):
         while self.is_running:
             self._process_input()
@@ -440,7 +415,6 @@ class ChessEngine:
 
         pg.quit()
         sys.exit()
-
 
     def _process_input(self):
         for ev in pg.event.get():
@@ -458,10 +432,9 @@ class ChessEngine:
             elif ev.type == pg.KEYDOWN:
                 if not self.in_menu:
                     if ev.key == pg.K_z and (pg.key.get_mods() & pg.KMOD_CTRL):
-                        self._revert()
+                        self._undo_multiple()
                     elif ev.key == pg.K_ESCAPE:
                         self.in_menu = True
-
 
     def _menu_click(self):
         mx, my = pg.mouse.get_pos()
@@ -474,15 +447,14 @@ class ChessEngine:
         elif quit_btn.collidepoint(mx, my):
             self.is_running = False
 
-
     def _reset_game(self):
         self.data = MatchData()
         self.selected = None
         self.available_spots = []
         self.threatened_units = []
+        self.history_stack = []
         self.in_menu = False
         self._setup_field()
-
 
     def _board_click(self):
         mx, my = pg.mouse.get_pos()
@@ -499,6 +471,7 @@ class ChessEngine:
                 self._find_moves(unit)
         else:
             if (grid_x, grid_y) in self.available_spots:
+                self._save_state_to_history()
                 if self.selected.perform_move(grid_x, grid_y):
                     self.selected = None
                     self.available_spots = []
@@ -507,6 +480,45 @@ class ChessEngine:
                 self.selected = None
                 self.available_spots = []
 
+    def _save_state_to_history(self):
+        import copy
+        state = {
+            'field': [[self.data.field[row][col] for col in range(8)] for row in range(8)],
+            'all_units': self.data.all_units.copy(),
+            'action_log': self.data.action_log.copy(),
+            'record': self.data.record.copy(),
+            'move_counter': self.data.move_counter,
+            'active_team': self.data.active_team,
+            'en_passant_spot': self.data.en_passant_spot
+        }
+        self.history_stack.append(state)
+        if len(self.history_stack) > 20:
+            self.history_stack.pop(0)
+
+    def _undo_multiple(self):
+        if not self.history_stack:
+            print("Nothing to undo!")
+            return
+
+        state = self.history_stack.pop()
+
+        self.data.field = [[state['field'][row][col] for col in range(8)] for row in range(8)]
+        self.data.all_units = state['all_units'].copy()
+        self.data.action_log = state['action_log'].copy()
+        self.data.record = state['record'].copy()
+        self.data.move_counter = state['move_counter']
+        self.data.active_team = state['active_team']
+        self.data.en_passant_spot = state['en_passant_spot']
+        self.data.finished = False
+        self.data.champion = None
+
+        for unit in self.data.all_units:
+            unit.match = self.data
+
+        self.selected = None
+        self.available_spots = []
+        self._update_threats()
+        print(f"Undo completed. {len(self.history_stack)} states remaining")
 
     def _find_moves(self, unit):
         self.available_spots = []
@@ -514,7 +526,6 @@ class ChessEngine:
             for col in range(8):
                 if unit.can_reach(col, row):
                     self.available_spots.append((col, row))
-
 
     def _update_threats(self):
         self.threatened_units = []
@@ -524,45 +535,6 @@ class ChessEngine:
             if unit.team == current and unit.active:
                 if unit._square_threatened(unit.x, unit.y, unit.team):
                     self.threatened_units.append(unit)
-
-
-    def _revert(self):
-        if not self.data.action_log:
-            print("Nothing to undo!")
-            return
-
-        action = self.data.action_log.pop()
-
-        action.unit.x, action.unit.y = action.sx, action.sy
-        action.unit.moved = action.saved_state['moved']
-        if action.saved_state['double_step'] is not None:
-            action.unit.double_step = action.saved_state['double_step']
-
-        self.data.field[action.sy][action.sx] = action.unit
-        self.data.field[action.ey][action.ex] = None
-
-        if action.eliminated:
-            action.eliminated.active = True
-            action.eliminated.x, action.eliminated.y = action.ex, action.ey
-            self.data.field[action.ey][action.ex] = action.eliminated
-            self.data.all_units.append(action.eliminated)
-
-        if action.castle:
-            rook, rx, ry, _, _ = action.castle
-            rook.x, rook.y = rx, ry
-            rook.moved = False
-            self.data.field[ry][rx] = rook
-
-        self.data.change_turn()
-
-        if self.data.record:
-            self.data.record.pop()
-
-        self.data.previous = None
-        self.data.en_passant_spot = None
-        self._update_threats()
-        print("Move undone")
-
 
     def _save_record(self):
         try:
@@ -578,7 +550,6 @@ class ChessEngine:
         except Exception as e:
             print(f"Error saving record: {e}")
 
-
     def _render(self):
         self.display.fill((30, 30, 40))
 
@@ -588,7 +559,6 @@ class ChessEngine:
             self._draw_game()
 
         pg.display.flip()
-
 
     def _draw_menu(self):
         title = self.title_font.render("CHESS MASTER", True, (255, 200, 100))
@@ -609,7 +579,6 @@ class ChessEngine:
         quit_rect = quit_text.get_rect(center=quit_btn.center)
         self.display.blit(quit_text, quit_rect)
 
-
     def _draw_game(self):
         self.display.blit(self.board_surface, (220, 70))
 
@@ -619,7 +588,6 @@ class ChessEngine:
                 if unit:
                     cell_x = 220 + col * 70
                     cell_y = 70 + row * 70
-                    
                     piece_text = self.piece_font.render(unit.get_icon(), True, (255, 255, 255))
                     piece_rect = piece_text.get_rect()
                     piece_rect.center = (cell_x + 35, cell_y + 35)
@@ -639,7 +607,6 @@ class ChessEngine:
         if self.data.finished:
             self._draw_result()
 
-
     def _draw_marker(self, col, row, color):
         marker = pg.Surface((70, 70), pg.SRCALPHA)
         if len(color) == 4:
@@ -649,7 +616,6 @@ class ChessEngine:
             marker.fill(color)
             marker.set_alpha(128)
         self.display.blit(marker, (220 + col * 70, 70 + row * 70))
-
 
     def _draw_info(self):
         turn_txt = f"Turn: {'WHITE' if self.data.active_team == Team.LIGHT else 'BLACK'}"
@@ -664,7 +630,7 @@ class ChessEngine:
 
         controls = [
             "Commands:",
-            "Ctrl+Z - undo",
+            "Ctrl+Z - undo (multi-step)",
             "ESC - menu"
         ]
 
@@ -678,15 +644,18 @@ class ChessEngine:
         text = self.small_font.render(threat_txt, True, (255, 140, 0))
         self.display.blit(text, (20, 290))
 
+        undo_txt = f"Undo states: {len(self.history_stack)}"
+        text = self.small_font.render(undo_txt, True, (100, 200, 255))
+        self.display.blit(text, (20, 330))
+
         if self.data.record:
             last_txt = "Last move:"
             text = self.small_font.render(last_txt, True, (200, 200, 100))
-            self.display.blit(text, (20, 340))
+            self.display.blit(text, (20, 370))
 
             last_move = self.data.record[-1]
             text = self.small_font.render(last_move, True, (220, 220, 220))
-            self.display.blit(text, (20, 370))
-
+            self.display.blit(text, (20, 400))
 
     def _draw_result(self):
         cover = pg.Surface((1000, 700))
